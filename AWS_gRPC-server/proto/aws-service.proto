@@ -1,0 +1,15 @@
+syntax = "proto3";
+package proto;
+option go_package = "./;proto";
+
+
+service AWSService {
+  rpc StringSend(Request) returns (Response) {}
+}
+
+message Request {
+  string testReq = 1;
+}
+message Response {
+  string testResp = 1;
+}
