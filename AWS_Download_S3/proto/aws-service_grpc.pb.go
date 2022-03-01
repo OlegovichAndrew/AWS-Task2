@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AWSServiceClient interface {
-	StringSend(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Download(ctx context.Context, in *Request, opts ...grpc.CallOption) (AWSService_DownloadClient, error)
 }
 
 type aWSServiceClient struct {
@@ -29,20 +29,43 @@ func NewAWSServiceClient(cc grpc.ClientConnInterface) AWSServiceClient {
 	return &aWSServiceClient{cc}
 }
 
-func (c *aWSServiceClient) StringSend(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
-	err := c.cc.Invoke(ctx, "/proto.AWSService/StringSend", in, out, opts...)
+func (c *aWSServiceClient) Download(ctx context.Context, in *Request, opts ...grpc.CallOption) (AWSService_DownloadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &AWSService_ServiceDesc.Streams[0], "/proto.AWSService/Download", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &aWSServiceDownloadClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type AWSService_DownloadClient interface {
+	Recv() (*Response, error)
+	grpc.ClientStream
+}
+
+type aWSServiceDownloadClient struct {
+	grpc.ClientStream
+}
+
+func (x *aWSServiceDownloadClient) Recv() (*Response, error) {
+	m := new(Response)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // AWSServiceServer is the server API for AWSService service.
 // All implementations must embed UnimplementedAWSServiceServer
 // for forward compatibility
 type AWSServiceServer interface {
-	StringSend(context.Context, *Request) (*Response, error)
+	Download(*Request, AWSService_DownloadServer) error
 	mustEmbedUnimplementedAWSServiceServer()
 }
 
@@ -50,8 +73,8 @@ type AWSServiceServer interface {
 type UnimplementedAWSServiceServer struct {
 }
 
-func (UnimplementedAWSServiceServer) StringSend(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StringSend not implemented")
+func (UnimplementedAWSServiceServer) Download(*Request, AWSService_DownloadServer) error {
+	return status.Errorf(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedAWSServiceServer) mustEmbedUnimplementedAWSServiceServer() {}
 
@@ -66,22 +89,25 @@ func RegisterAWSServiceServer(s grpc.ServiceRegistrar, srv AWSServiceServer) {
 	s.RegisterService(&AWSService_ServiceDesc, srv)
 }
 
-func _AWSService_StringSend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Request)
-	if err := dec(in); err != nil {
-		return nil, err
+func _AWSService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Request)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(AWSServiceServer).StringSend(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.AWSService/StringSend",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AWSServiceServer).StringSend(ctx, req.(*Request))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(AWSServiceServer).Download(m, &aWSServiceDownloadServer{stream})
+}
+
+type AWSService_DownloadServer interface {
+	Send(*Response) error
+	grpc.ServerStream
+}
+
+type aWSServiceDownloadServer struct {
+	grpc.ServerStream
+}
+
+func (x *aWSServiceDownloadServer) Send(m *Response) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 // AWSService_ServiceDesc is the grpc.ServiceDesc for AWSService service.
@@ -90,12 +116,13 @@ func _AWSService_StringSend_Handler(srv interface{}, ctx context.Context, dec fu
 var AWSService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.AWSService",
 	HandlerType: (*AWSServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "StringSend",
-			Handler:    _AWSService_StringSend_Handler,
+			StreamName:    "Download",
+			Handler:       _AWSService_Download_Handler,
+			ServerStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "aws-service.proto",
 }

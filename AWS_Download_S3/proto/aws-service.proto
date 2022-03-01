@@ -2,13 +2,16 @@ syntax = "proto3";
 package proto;
 option go_package = "./;proto";
 
-service AWSService {
-  rpc StringSend(Request) returns (Response) {}
+
+message Response {
+  bytes fileChunk = 1;
 }
 
 message Request {
-  string testReq = 1;
+  string fileName = 1;
+  string fileBucket = 2;
 }
-message Response {
-  string testResp = 1;
+
+service AWSService {
+  rpc Download(Request) returns (stream Response);
 }
