@@ -3,12 +3,17 @@ package transport
 import (
 	"aws-server/proto"
 	"context"
+	"flag"
 	"fmt"
 	"google.golang.org/grpc"
 	"io"
 	"log"
 	"net/http"
 	"os"
+)
+
+var (
+	addrgRPC = flag.String("addrgrpc", "localhost:4445", "The gRPC server address")
 )
 
 type Server struct {
@@ -22,7 +27,7 @@ func NewServer() *Server {
 func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Downloading started\n")
 
-	conn, err := grpc.Dial("localhost:4444", grpc.WithInsecure())
+	conn, err := grpc.Dial(*addrgRPC, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("client could connect to grpc service:", err)
 	}
