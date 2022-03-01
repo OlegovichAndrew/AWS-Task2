@@ -24,6 +24,7 @@ func GetFile(ctx context.Context, client *s3.Client, input *s3.GetObjectInput) (
 }
 
 func SaveFile(file *s3.GetObjectOutput, key string) error {
+	fmt.Printf("Saving: %v\n", key)
 	f, err := ioutil.ReadAll(file.Body)
 	if err != nil {
 		return err
