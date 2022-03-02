@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	addrgRPC = flag.String("addrgrpc", "localhost:4445", "The gRPC server address")
+	addrgRPC = flag.String("addrgrpc", ":8080", "The gRPC server address")
 )
 
 type Server struct {

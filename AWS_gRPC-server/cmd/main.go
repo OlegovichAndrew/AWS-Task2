@@ -16,8 +16,12 @@ func main() {
 	flag.Parse()
 	server := transport.NewServer()
 
-	http.HandleFunc("/download", server.DownloadEndpoint)
-	fmt.Println("http started")
-	http.ListenAndServe(*addr, nil)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/download", server.DownloadEndpoint)
+	fmt.Printf("http started on addr:%v\n", *addr)
+	err := http.ListenAndServe(*addr, mux)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 }
