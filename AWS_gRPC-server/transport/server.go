@@ -1,19 +1,15 @@
 package transport
 
 import (
+	"aws-server/config"
 	"aws-server/proto"
 	"context"
-	"flag"
 	"fmt"
 	"google.golang.org/grpc"
 	"io"
 	"log"
 	"net/http"
 	"os"
-)
-
-var (
-	addrgRPC = flag.String("addrgrpc", ":8080", "The gRPC server address")
 )
 
 type Server struct {
@@ -27,15 +23,17 @@ func NewServer() *Server {
 func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Downloading started\n")
 
-	conn, err := grpc.Dial(*addrgRPC, grpc.WithInsecure())
+	conn, err := grpc.Dial(config.GRPC_ADDR, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal("client could connect to grpc service:", err)
 	}
+	log.Printf("gRPC client connected: %v", config.GRPC_ADDR)
+
 	c := proto.NewAWSServiceClient(conn)
 
 	fileStreamResponse, err := c.Download(context.TODO(), &proto.Request{
-		FileName:   "The_first_upload/number.txt",
-		FileBucket: "upload.practice",
+		FileName:   "number.txt",
+		FileBucket: "ul.practice",
 	})
 
 	if err != nil {
