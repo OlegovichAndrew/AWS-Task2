@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aws-dl-s3/config"
 	"aws-dl-s3/transport"
 	"flag"
 	"fmt"
@@ -13,12 +14,11 @@ import (
 
 var (
 	bucket, fileKey string
-	addr            = flag.String("addr", "localhost:4444", "the address to connect to")
 )
 
 func main() {
-	flag.StringVar(&bucket, "b", "upload.practice", "The bucket to download/upload the file from/to")
-	flag.StringVar(&fileKey, "f", "The_first_upload/number.txt", "The file to download/upload")
+	flag.StringVar(&bucket, "b", "ul.practice", "The bucket to download/upload the file from/to")
+	flag.StringVar(&fileKey, "f", "number.txt", "The file to download/upload")
 	flag.Parse()
 
 	if bucket == "" || fileKey == "" {
@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	lis, err := net.Listen("tcp", *addr)
+	lis, err := net.Listen("tcp", config.GRPC_PORT)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
