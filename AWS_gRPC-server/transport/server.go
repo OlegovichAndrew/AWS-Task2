@@ -21,7 +21,10 @@ func NewServer() *Server {
 }
 
 func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Downloading started\n")
+	_, err := fmt.Fprintf(w, "Downloading started...\n")
+	if err != nil {
+		log.Println(err)
+	}
 
 	conn, err := grpc.Dial(config.GRPC_ADDR, grpc.WithInsecure())
 	if err != nil {
@@ -32,8 +35,8 @@ func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
 	c := proto.NewAWSServiceClient(conn)
 
 	fileStreamResponse, err := c.Download(context.TODO(), &proto.Request{
-		FileName:   "number.txt",
-		FileBucket: "ul.practice",
+		FileName:   config.FILE_NAME,
+		FileBucket: config.BUCKET_NAME,
 	})
 
 	if err != nil {
@@ -70,5 +73,9 @@ func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("got new chunk with data: %s \n", chunkResponse.FileChunk)
+	}
+	_, err = fmt.Fprintf(w, "Downloading finished!\n")
+	if err != nil {
+		log.Println(err)
 	}
 }
