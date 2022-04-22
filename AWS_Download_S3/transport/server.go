@@ -1,16 +1,19 @@
 package transport
 
 import (
-	"aws-dl-s3/proto"
-	"aws-dl-s3/utils"
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"google.golang.org/grpc/peer"
 	"io"
 	"log"
 	"os"
+
+	"aws-dl-s3/proto"
+	"aws-dl-s3/utils"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 var client *s3.Client
@@ -24,6 +27,11 @@ func NewServer() *Server {
 }
 
 func (s *Server) Download(req *proto.Request, responseStream proto.AWSService_DownloadServer) error {
+	// show incomer's IP
+	p, _ := peer.FromContext(responseStream.Context())
+	incomingIP := p.Addr.String()
+	log.Printf("Incoming request from IP: %v", incomingIP)
+
 	// declare an AWS client
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -51,7 +59,7 @@ func (s *Server) Download(req *proto.Request, responseStream proto.AWSService_Do
 		return err
 	}
 
-	//send file
+	//send file back by stream
 	bufferSize := 64 * 1024 //64KiB, tweak this as desired
 	fileUpload, err := os.Open(utils.SplitKeyName(req.GetFileName()))
 	if err != nil {
