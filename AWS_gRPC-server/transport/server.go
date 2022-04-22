@@ -1,16 +1,21 @@
 package transport
 
 import (
-	"aws-server/config"
-	"aws-server/proto"
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"io"
 	"log"
-	"net/http"
 	"os"
+
+	"aws-grpc-server/proto"
+	"aws-grpc-server/utils"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"google.golang.org/grpc/peer"
 )
+
+var client *s3.Client
 
 type Server struct {
 	proto.UnimplementedAWSServiceServer
@@ -20,55 +25,66 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-func (s *Server) DownloadEndpoint(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Downloading started\n")
+//Download function downloads the file from the bucket came with request. Then send it back by grpc steram.
+func (s *Server) Download(req *proto.Request, responseStream proto.AWSService_DownloadServer) error {
+	// show incomer's IP
+	p, _ := peer.FromContext(responseStream.Context())
+	incomingIP := p.Addr.String()
+	log.Printf("Incoming request from IP: %v", incomingIP)
 
-	conn, err := grpc.Dial(config.GRPC_ADDR, grpc.WithInsecure())
+	// declare an AWS client
+	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Fatal("client could connect to grpc service:", err)
-	}
-	log.Printf("gRPC client connected: %v", config.GRPC_ADDR)
-
-	c := proto.NewAWSServiceClient(conn)
-
-	fileStreamResponse, err := c.Download(context.TODO(), &proto.Request{
-		FileName:   "number.txt",
-		FileBucket: "ul.practice",
-	})
-
-	if err != nil {
-		log.Println("error downloading:", err)
-		return
+		panic("configuration error, " + err.Error())
 	}
 
-	f, err := os.Create("filename.txt")
+	client = s3.NewFromConfig(cfg)
+
+	// get a file from AWS bucket
+	dlInput := &s3.GetObjectInput{
+		Bucket: aws.String(req.GetFileBucket()),
+		Key:    aws.String(req.GetFileName()),
+	}
+
+	file, err := utils.GetFile(context.TODO(), client, dlInput)
+	if err != nil {
+		log.Printf("GetFile error: %v", err)
+		return err
+	}
+
+	// save the file
+	err = utils.SaveFile(file, req.GetFileName())
+	if err != nil {
+		log.Printf("SaveFile error: %v\n", err)
+		return err
+	}
+
+	//send file back by stream
+	bufferSize := 64 * 1024 //64KiB, tweak this as desired
+	fileUpload, err := os.Open(utils.SplitKeyName(req.GetFileName()))
 	if err != nil {
 		fmt.Println(err)
-		return
+		return err
 	}
 
+	defer fileUpload.Close()
+	buff := make([]byte, bufferSize)
 	for {
-		chunkResponse, err := fileStreamResponse.Recv()
-		if err == io.EOF {
-			log.Println("received all chunks")
-			err = f.Close()
-			if err != nil {
+		bytesRead, err := fileUpload.Read(buff)
+		if err != nil {
+			if err != io.EOF {
 				fmt.Println(err)
-				return
 			}
 			break
 		}
-		if err != nil {
-			log.Println("err receiving chunk:", err)
-			break
+		resp := &proto.Response{
+			FileChunk: buff[:bytesRead],
 		}
-		_, err = f.Write(chunkResponse.FileChunk)
+		err = responseStream.Send(resp)
 		if err != nil {
-			fmt.Println(err)
-			f.Close()
-			return
+			log.Println("error while sending chunk:", err)
+			return err
 		}
-
-		log.Printf("got new chunk with data: %s \n", chunkResponse.FileChunk)
 	}
+	return nil
 }

@@ -1,22 +1,29 @@
 package main
 
 import (
-	"aws-server/config"
-	"fmt"
 	"log"
-	"net/http"
+	"net"
 
-	"aws-server/transport"
+	"aws-grpc-server/config"
+	"aws-grpc-server/proto"
+	"aws-grpc-server/transport"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
-	server := transport.NewServer()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/download", server.DownloadEndpoint)
-	log.Printf("http started on addr:%v\n", config.HTTP_ADDR)
-	err := http.ListenAndServe(config.HTTP_ADDR, mux)
+	lis, err := net.Listen("tcp", config.GRPC_PORT)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	server := transport.NewServer()
+	s := grpc.NewServer()
+	proto.RegisterAWSServiceServer(s, server)
+
+	log.Printf("server listening at %v", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
