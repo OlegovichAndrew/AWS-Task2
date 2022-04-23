@@ -2,11 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage("Go test") {
-            steps {
-                sh 'go test -v ./...'
-            }
-        }
         stage('Building image') {
           steps{
             script {
