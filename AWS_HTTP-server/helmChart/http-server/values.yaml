@@ -1,0 +1,29 @@
+# Default values for http-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+
+#AWS credentials
+pass:
+  id: QUtJQVVaWEdHREFFVjNWS1pPSjI=
+  key: WGVLWXRjWlhRdWtNd3dKTzk3bEpwRFNGenkydVNsZTBZbmwzWjRCSA==
+
+region: "eu-central-1"
+
+#grpc-server pod-name
+grpc_addr: grpc-server-svc:9050
+
+replicaCount: 2
+
+image:
+  repository: andrewolegovich/http-server
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+#nameOverride: ""
+#fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 8070
