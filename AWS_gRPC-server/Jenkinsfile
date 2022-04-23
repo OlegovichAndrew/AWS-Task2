@@ -10,7 +10,7 @@ pipeline {
         stage("Docker build") {
             steps {
                 script {
-                    def customImage = docker.build('andrewolegovich/aws-grpc-server', ".")
+                    def customImage = docker.build('andrewolegovich/aws-grpc-server', "./")
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
                     customImage.push("${env.BUILD_NUMBER}")
                     }
