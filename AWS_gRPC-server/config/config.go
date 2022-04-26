@@ -10,4 +10,4 @@ func GetStringParameter(paramName, defaultValue string) string {
 	return result
 }
 
-var GRPC_PORT = GetStringParameter("GRPC_PORT", ":9000")
+var GRPC_PORT = GetStringParameter("GRPC_PORT", ":9050")
