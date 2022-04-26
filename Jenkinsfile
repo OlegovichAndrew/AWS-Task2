@@ -11,13 +11,13 @@ pipeline {
 
 		stage("Build Docker Image for HTTP-server") {
 			steps{
-				sh "docker build -t andrewolegovich/http-server http_server_path"
+				sh "docker build -t andrewolegovich/http-server ${http_server_path}"
 			}
 		}
 
         stage("Build Docker Image for gRPC-server") {
             steps{
-                sh "docker build -t andrewolegovich/grpc-server grpc_server_path"
+                sh "docker build -t andrewolegovich/grpc-server ${grpc_server_path}"
             }
         }
 
