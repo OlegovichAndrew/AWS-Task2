@@ -11,13 +11,13 @@ pipeline {
 
 		stage("Build Docker Image for HTTP-server") {
 			steps{
-				sh "docker build -t andrewolegovich/http-server ${http_server_path}"
+				sh "docker build -t andrewolegovich/http-server:${BUILD_TIMESTAMP} ${http_server_path}"
 			}
 		}
 
         stage("Build Docker Image for gRPC-server") {
             steps{
-                sh "docker build -t andrewolegovich/grpc-server ${grpc_server_path}"
+                sh "docker build -t andrewolegovich/grpc-server:${BUILD_TIMESTAMP} ${grpc_server_path}"
             }
         }
 
@@ -29,8 +29,8 @@ pipeline {
   				]){
 					sh "docker login -u ${dockeruser} -p ${dockerpass} ${dockerHub}"
   				}
-	    	  	sh "docker push andrewolegovich/grpc-server"
-	    	  	sh "docker push andrewolegovich/http-server"
+	    	  	sh "docker push andrewolegovich/grpc-server:${BUILD_TIMESTAMP}"
+	    	  	sh "docker push andrewolegovich/http-server:${BUILD_TIMESTAMP}"
 	    	 }
 
 	  	}
