@@ -1,15 +1,11 @@
 FROM golang:alpine AS builder
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
 RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 WORKDIR /build
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 go build -ldflags "-w -s" -o main .
 WORKDIR /dist
 RUN cp /build/main .
 
